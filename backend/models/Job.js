@@ -96,6 +96,54 @@ const jobSchema = new mongoose.Schema({
     recommendations: [{ type: String }],
     confidence: { type: Number, min: 0, max: 1 }
   },
+
+  // Comprehensive Summary Report
+  summaryReport: {
+    executiveSummary: { type: String },
+    keyFindings: [{ type: String }],
+    riskBreakdown: {
+      overall: {
+        score: { type: Number },
+        level: { type: String },
+        securityScore: { type: Number }
+      },
+      commits: {
+        total: { type: Number },
+        highRisk: { type: Number },
+        suspicious: { type: Number },
+        averageRisk: { type: Number }
+      },
+      dependencies: {
+        total: { type: Number },
+        critical: { type: Number },
+        high: { type: Number },
+        vulnerable: { type: Number },
+        typosquatting: { type: Number }
+      },
+      alerts: {
+        total: { type: Number },
+        critical: { type: Number },
+        high: { type: Number },
+        medium: { type: Number },
+        low: { type: Number }
+      }
+    },
+    recommendations: [{
+      priority: { type: String, enum: ['critical', 'high', 'medium', 'low'] },
+      action: { type: String },
+      description: { type: String }
+    }],
+    technicalDetails: {
+      analysisDate: { type: Date },
+      analysisDuration: { type: Number },
+      toolsUsed: [{ type: String }],
+      coverage: {
+        commits: { type: Number },
+        dependencies: { type: Number },
+        filesAnalyzed: { type: Number }
+      }
+    }
+  },
   
   // Build Information
   buildInfo: {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -29,6 +30,7 @@ import { toast } from '../components/ui/toast'
 import api from '../services/api'
 
 const HomeDark = () => {
+  const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddRepo, setShowAddRepo] = useState(false)
@@ -398,7 +400,11 @@ const HomeDark = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredJobs.map((job) => (
-                  <Card key={job.jobId} className="bg-gray-700 border-gray-600 hover:bg-gray-650 transition-colors">
+                  <Card 
+                    key={job.jobId} 
+                    className="bg-gray-700 border-gray-600 hover:bg-gray-650 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/dashboard/${job.jobId}`)}
+                  >
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -462,7 +468,8 @@ const HomeDark = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation() // Prevent card click
                               setSelectedJob(job)
                               setShowLogs(true)
                               loadJobLogs(job.jobId)
@@ -471,6 +478,18 @@ const HomeDark = () => {
                           >
                             <Terminal className="h-4 w-4 mr-2" />
                             View Logs
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={(e) => {
+                              e.stopPropagation() // Prevent card click
+                              navigate(`/dashboard/${job.jobId}`)
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Dashboard
                           </Button>
                         </div>
                       </div>

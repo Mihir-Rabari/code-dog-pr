@@ -405,45 +405,337 @@ class AnalysisEngine {
 
   async generateFinalAssessment(job) {
     try {
+      // Calculate comprehensive metrics
+      const metrics = this.calculateComprehensiveMetrics(job)
+      
       // Update repository info with final stats
       job.repoInfo.totalCommits = job.commits.length
       job.repoInfo.lastCommit = job.commits[0]?.hash || null
+      job.repoInfo.metrics = metrics
+
+      // Generate detailed summary report
+      const summaryReport = this.generateSummaryReport(job, metrics)
+      job.summaryReport = summaryReport
 
       await job.save()
 
-      await this.emitLog(job.jobId, 'info', 'Final assessment generated', 'system')
+      await this.emitLog(job.jobId, 'info', `Final assessment completed - Risk Score: ${job.riskScore}/100`, 'system')
+      await this.emitLog(job.jobId, 'info', `Analysis Summary: ${metrics.totalIssues} issues found, ${metrics.criticalIssues} critical`, 'system')
 
     } catch (error) {
       await this.emitLog(job.jobId, 'warn', `Final assessment generation failed: ${error.message}`, 'system')
     }
   }
 
-  async updateJobStatus(job, status, progress) {
-    job.status = status
-    job.progress = progress
-    await job.save()
+  calculateComprehensiveMetrics(job) {
+    const commits = job.commits || []
+    const dependencies = job.dependencies || []
+    const alerts = job.alerts || []
 
-    this.io.to(`job-${job.jobId}`).emit('progress', {
-      percentage: progress,
-      stage: status
+    // Commit metrics
+    const highRiskCommits = commits.filter(c => c.riskScore > 70)
+    const suspiciousCommits = commits.filter(c => c.suspiciousPatterns && c.suspiciousPatterns.length > 0)
+    const avgCommitRisk = commits.length > 0 ? commits.reduce((sum, c) => sum + (c.riskScore || 0), 0) / commits.length : 0
+
+    // Dependency metrics
+    const criticalDeps = dependencies.filter(d => d.riskLevel === 'critical')
+    const highRiskDeps = dependencies.filter(d => d.riskLevel === 'high')
+    const typosquatDeps = dependencies.filter(d => d.typosquatting && d.typosquatting.isTyposquat)
+    const vulnerableDeps = dependencies.filter(d => d.vulnerabilities && d.vulnerabilities.length > 0)
+
+    // Alert metrics
+    const criticalAlerts = alerts.filter(a => a.severity === 'critical')
+    const highAlerts = alerts.filter(a => a.severity === 'high')
+    const mediumAlerts = alerts.filter(a => a.severity === 'medium')
+    const lowAlerts = alerts.filter(a => a.severity === 'low')
+
+    // Overall metrics
+    const totalIssues = alerts.length
+    const criticalIssues = criticalAlerts.length
+    const securityScore = Math.max(0, 100 - (job.riskScore || 0))
+
+    return {
+      // Commit metrics
+      totalCommits: commits.length,
+      highRiskCommits: highRiskCommits.length,
+      suspiciousCommits: suspiciousCommits.length,
+      avgCommitRisk: Math.round(avgCommitRisk),
+
+      // Dependency metrics
+      totalDependencies: dependencies.length,
+      criticalDependencies: criticalDeps.length,
+      highRiskDependencies: highRiskDeps.length,
+      typosquattingDependencies: typosquatDeps.length,
+      vulnerableDependencies: vulnerableDeps.length,
+
+      // Alert metrics
+      totalAlerts: alerts.length,
+      criticalAlerts: criticalAlerts.length,
+      highAlerts: highAlerts.length,
+      mediumAlerts: mediumAlerts.length,
+      lowAlerts: lowAlerts.length,
+
+      // Overall metrics
+      totalIssues,
+      criticalIssues,
+      securityScore,
+      riskScore: job.riskScore || 0,
+      riskLevel: job.riskLevel || 'unknown'
+    }
+  }
+
+  generateSummaryReport(job, metrics) {
+    const report = {
+      executiveSummary: this.generateExecutiveSummary(job, metrics),
+      keyFindings: this.generateKeyFindings(job, metrics),
+      riskBreakdown: this.generateRiskBreakdown(job, metrics),
+      recommendations: this.generateRecommendations(job, metrics),
+      technicalDetails: {
+        analysisDate: new Date().toISOString(),
+        analysisDuration: job.endTime ? new Date(job.endTime).getTime() - new Date(job.startTime).getTime() : null,
+        toolsUsed: ['Static Analysis', 'AI-Powered Threat Detection', 'Dependency Scanning', 'Commit Analysis'],
+        coverage: {
+          commits: metrics.totalCommits,
+          dependencies: metrics.totalDependencies,
+          filesAnalyzed: job.commits.reduce((sum, c) => sum + (c.filesChanged?.length || 0), 0)
+        }
+      }
+    }
+
+    return report
+  }
+
+  generateExecutiveSummary(job, metrics) {
+    const riskLevel = job.riskLevel || 'unknown'
+    const riskScore = job.riskScore || 0
+    
+    let summary = `Security analysis of ${job.repoUrl} completed with a risk score of ${riskScore}/100 (${riskLevel} risk). `
+    
+    if (metrics.criticalIssues > 0) {
+      summary += `${metrics.criticalIssues} critical security issues were identified requiring immediate attention. `
+    }
+    
+    if (metrics.totalIssues === 0) {
+      summary += 'No significant security issues were detected in this analysis.'
+    } else {
+      summary += `A total of ${metrics.totalIssues} security concerns were found across commits and dependencies.`
+    }
+
+    return summary
+  }
+
+  generateKeyFindings(job, metrics) {
+    const findings = []
+
+    if (metrics.criticalAlerts > 0) {
+      findings.push(`${metrics.criticalAlerts} critical security alerts requiring immediate action`)
+    }
+
+    if (metrics.highRiskCommits > 0) {
+      findings.push(`${metrics.highRiskCommits} high-risk commits with suspicious patterns`)
+    }
+
+    if (metrics.criticalDependencies > 0) {
+      findings.push(`${metrics.criticalDependencies} critical dependency vulnerabilities`)
+    }
+
+    if (metrics.typosquattingDependencies > 0) {
+      findings.push(`${metrics.typosquattingDependencies} potential typosquatting attacks detected`)
+    }
+
+    if (metrics.vulnerableDependencies > 0) {
+      findings.push(`${metrics.vulnerableDependencies} dependencies with known vulnerabilities`)
+    }
+
+    if (findings.length === 0) {
+      findings.push('No critical security issues identified')
+      findings.push('Repository follows security best practices')
+    }
+
+    return findings
+  }
+
+  generateRiskBreakdown(job, metrics) {
+    return {
+      overall: {
+        score: metrics.riskScore,
+        level: metrics.riskLevel,
+        securityScore: metrics.securityScore
+      },
+      commits: {
+        total: metrics.totalCommits,
+        highRisk: metrics.highRiskCommits,
+        suspicious: metrics.suspiciousCommits,
+        averageRisk: metrics.avgCommitRisk
+      },
+      dependencies: {
+        total: metrics.totalDependencies,
+        critical: metrics.criticalDependencies,
+        high: metrics.highRiskDependencies,
+        vulnerable: metrics.vulnerableDependencies,
+        typosquatting: metrics.typosquattingDependencies
+      },
+      alerts: {
+        total: metrics.totalAlerts,
+        critical: metrics.criticalAlerts,
+        high: metrics.highAlerts,
+        medium: metrics.mediumAlerts,
+        low: metrics.lowAlerts
+      }
+    }
+  }
+
+  generateRecommendations(job, metrics) {
+    const recommendations = []
+
+    if (metrics.criticalIssues > 0) {
+      recommendations.push({
+        priority: 'critical',
+        action: 'Address critical security issues immediately',
+        description: 'Review and remediate all critical alerts before deployment'
+      })
+    }
+
+    if (metrics.vulnerableDependencies > 0) {
+      recommendations.push({
+        priority: 'high',
+        action: 'Update vulnerable dependencies',
+        description: 'Upgrade dependencies to secure versions and implement dependency scanning'
+      })
+    }
+
+    if (metrics.typosquattingDependencies > 0) {
+      recommendations.push({
+        priority: 'high',
+        action: 'Review suspicious dependencies',
+        description: 'Verify legitimacy of flagged packages and consider alternatives'
+      })
+    }
+
+    if (metrics.highRiskCommits > 0) {
+      recommendations.push({
+        priority: 'medium',
+        action: 'Review high-risk commits',
+        description: 'Conduct manual review of flagged commits for security issues'
+      })
+    }
+
+    recommendations.push({
+      priority: 'low',
+      action: 'Implement continuous security monitoring',
+      description: 'Set up automated security scanning in CI/CD pipeline'
     })
+
+    recommendations.push({
+      priority: 'low',
+      action: 'Security training',
+      description: 'Provide security awareness training for development team'
+    })
+
+    return recommendations
+  }
+
+  async updateJobStatus(job, status, progress) {
+    try {
+      // Update job status and progress
+      job.status = status
+      job.progress = progress
+      
+      // Add a log entry for status changes
+      await job.addLog('info', `Status updated: ${status} (${progress}%)`, 'system')
+      
+      // Save to database
+      await job.save()
+
+      // Emit real-time progress update
+      this.io.to(`job-${job.jobId}`).emit('progress', {
+        percentage: progress,
+        stage: status
+      })
+      
+      log.info('📊 Job status updated', { 
+        jobId: job.jobId, 
+        status, 
+        progress: `${progress}%` 
+      })
+      
+    } catch (error) {
+      log.error('❌ Failed to update job status', { 
+        jobId: job.jobId, 
+        status, 
+        progress, 
+        error: error.message 
+      })
+      throw error
+    }
   }
 
   async emitLog(jobId, level, message, source) {
-    this.io.to(`job-${jobId}`).emit('log', {
-      timestamp: Date.now(),
-      level,
-      message,
-      source
-    })
+    try {
+      // Get the job from database or active jobs
+      let job = this.activeJobs.get(jobId)
+      if (!job) {
+        job = await Job.findOne({ jobId })
+      }
+      
+      if (job) {
+        // Store log persistently in database
+        await job.addLog(level, message, source)
+      }
+      
+      // Emit log via WebSocket for real-time updates
+      this.io.to(`job-${jobId}`).emit('log', {
+        timestamp: Date.now(),
+        level,
+        message,
+        source
+      })
+    } catch (error) {
+      log.error('❌ Failed to store log', { jobId, level, message, error: error.message })
+      
+      // Still emit via WebSocket even if database storage fails
+      this.io.to(`job-${jobId}`).emit('log', {
+        timestamp: Date.now(),
+        level,
+        message,
+        source
+      })
+    }
   }
 
   async emitAlert(jobId, alert) {
-    this.io.to(`job-${jobId}`).emit('alert', {
-      id: uuidv4(),
-      timestamp: Date.now(),
-      ...alert
-    })
+    try {
+      // Get the job from database or active jobs
+      let job = this.activeJobs.get(jobId)
+      if (!job) {
+        job = await Job.findOne({ jobId })
+      }
+      
+      if (job) {
+        // Store alert persistently in database using the Job model's addAlert method
+        await job.addAlert({
+          id: uuidv4(),
+          timestamp: new Date(),
+          ...alert
+        })
+      }
+      
+      // Emit alert via WebSocket for real-time updates
+      this.io.to(`job-${jobId}`).emit('alert', {
+        id: uuidv4(),
+        timestamp: Date.now(),
+        ...alert
+      })
+    } catch (error) {
+      log.error('❌ Failed to store alert', { jobId, alert, error: error.message })
+      
+      // Still emit via WebSocket even if database storage fails
+      this.io.to(`job-${jobId}`).emit('alert', {
+        id: uuidv4(),
+        timestamp: Date.now(),
+        ...alert
+      })
+    }
   }
 
   async handleAnalysisError(job, error) {

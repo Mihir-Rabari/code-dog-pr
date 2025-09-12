@@ -245,11 +245,48 @@ app.get('/api/job/:jobId/details', async (req, res) => {
       alerts: job.alerts,
       logs: job.logs,
       aiSummary: job.aiSummary,
+      summaryReport: job.summaryReport,
       buildInfo: job.buildInfo
     })
     
   } catch (error) {
     log.error('❌ Failed to get job details', error)
+    res.status(404).json({
+      error: 'Job not found',
+      jobId: req.params.jobId,
+      message: error.message
+    })
+  }
+})
+
+// Get comprehensive summary report endpoint
+app.get('/api/job/:jobId/report', async (req, res) => {
+  try {
+    const { jobId } = req.params
+    log.info('📊 Summary report requested', { jobId })
+    
+    const job = await analysisEngine.getJobStatus(jobId)
+    
+    if (!job.summaryReport) {
+      return res.status(404).json({
+        error: 'Summary report not available',
+        message: 'Analysis may still be in progress or failed to complete'
+      })
+    }
+    
+    res.json({
+      jobId: job.jobId,
+      repoUrl: job.repoUrl,
+      status: job.status,
+      riskScore: job.riskScore,
+      riskLevel: job.riskLevel,
+      summaryReport: job.summaryReport,
+      metrics: job.repoInfo?.metrics,
+      generatedAt: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    log.error('❌ Failed to get summary report', error)
     res.status(404).json({
       error: 'Job not found',
       jobId: req.params.jobId,

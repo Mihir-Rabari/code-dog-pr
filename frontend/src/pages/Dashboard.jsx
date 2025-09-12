@@ -43,6 +43,39 @@ import {
 
 const log = createLogger('DASHBOARD')
 
+// Real-time log processing utilities
+const formatLogTimestamp = (timestamp) => {
+  const date = new Date(timestamp)
+  return date.toLocaleTimeString('en-US', { 
+    hour12: false, 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit' 
+  })
+}
+
+const getLogLevelIcon = (level) => {
+  switch (level) {
+    case 'error': return '🚨'
+    case 'warn': return '⚠️'
+    case 'info': return 'ℹ️'
+    case 'debug': return '🔍'
+    default: return '📝'
+  }
+}
+
+const getLogSourceIcon = (source) => {
+  switch (source) {
+    case 'system': return '🖥️'
+    case 'build': return '🔨'
+    case 'analysis': return '🔍'
+    case 'ai': return '🤖'
+    default: return '📋'
+  }
+}
+
+
+
 function Dashboard() {
   const { jobId } = useParams()
   const [job, setJob] = useState(null)
@@ -75,16 +108,37 @@ function Dashboard() {
           if (detailsResponse.ok) {
             const details = await detailsResponse.json()
             log.info('✅ Job details received', { 
-              commits: details.commits?.length,
-              dependencies: details.dependencies?.length,
-              alerts: details.alerts?.length
+              commits: details.commits?.length || 0,
+              dependencies: details.dependencies?.length || 0,
+              alerts: details.alerts?.length || 0,
+              logs: details.logs?.length || 0
             })
             setJobDetails(details)
             setAlerts(details.alerts || [])
             setLogs(details.logs || [])
+          } else {
+            log.warn('⚠️ Job details API returned error status', { status: detailsResponse.status })
+            // Initialize with empty arrays instead of mock data
+            setJobDetails({
+              commits: [],
+              dependencies: [],
+              alerts: [],
+              logs: []
+            })
+            setAlerts([])
+            setLogs([])
           }
         } catch (detailsError) {
-          log.warn('⚠️ Could not fetch job details', detailsError.message)
+          log.error('❌ Failed to fetch job details', detailsError.message)
+          // Initialize with empty arrays instead of mock data
+          setJobDetails({
+            commits: [],
+            dependencies: [],
+            alerts: [],
+            logs: []
+          })
+          setAlerts([])
+          setLogs([])
         }
         
       } catch (err) {
@@ -355,7 +409,7 @@ function Dashboard() {
         <div className="container mx-auto px-6">
           <nav className="flex space-x-1">
             {[
-              { id: 'logs', label: 'Live Logs', icon: Terminal, badge: null },
+              { id: 'logs', label: 'Live Logs', icon: Terminal, badge: logs.length > 0 ? logs.filter(l => l.level === 'error').length : null },
               { id: 'commits', label: 'Commits', icon: GitCommit, badge: jobDetails?.commits?.filter(c => c.riskScore > 70).length },
               { id: 'dependencies', label: 'Dependencies', icon: Package, badge: jobDetails?.dependencies?.filter(d => d.riskLevel === 'high' || d.riskLevel === 'critical').length },
               { id: 'summary', label: 'Summary', icon: TrendingUp, badge: null }
@@ -1411,18 +1465,29 @@ function LogsTab({ logs, logsEndRef, job }) {
             ) : (
               <div className="space-y-1">
                 {logs.map((log, index) => (
-                  <div key={index} className={`flex items-start space-x-3 py-1 hover:bg-gray-800/30 rounded px-2 -mx-2 ${getLogColor(log.level)}`}>
+                  <div key={log._id || index} className={`flex items-start space-x-3 py-1 hover:bg-gray-800/30 rounded px-2 -mx-2 ${getLogColor(log.level)}`}>
                     <span className="text-gray-500 text-xs mt-0.5 font-mono">
-                      {new Date(log.timestamp).toLocaleTimeString()}
+                      {formatLogTimestamp(log.timestamp)}
                     </span>
-                    <span className="text-lg leading-none">{getLogIcon(log.source)}</span>
+                    <span className="text-lg leading-none">{getLogSourceIcon(log.source)}</span>
                     <Badge 
                       variant={log.level === 'error' ? 'destructive' : log.level === 'warn' ? 'warning' : 'secondary'}
                       className="text-xs px-2 py-0"
                     >
                       {log.level.toUpperCase()}
                     </Badge>
-                    <span className="flex-1 leading-relaxed">{log.message}</span>
+                    <span className="flex-1 leading-relaxed">
+                      {getLogLevelIcon(log.level)} {log.message}
+                    </span>
+                    {log.details && (
+                      <button 
+                        className="text-xs text-gray-400 hover:text-gray-300"
+                        onClick={() => console.log('Log details:', log.details)}
+                        title="View details"
+                      >
+                        📋
+                      </button>
+                    )}
                   </div>
                 ))}
                 <div ref={logsEndRef} />
