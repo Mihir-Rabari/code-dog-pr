@@ -1,0 +1,59 @@
+# Node.js Analysis Environment
+FROM node:18-alpine
+
+# Install security tools and utilities
+RUN apk add --no-cache \
+    git \
+    curl \
+    wget \
+    bash \
+    python3 \
+    py3-pip \
+    jq \
+    && rm -rf /var/cache/apk/*
+
+# Install Node.js security analysis tools
+RUN npm install -g \
+    npm-audit \
+    retire \
+    eslint \
+    @eslint/js \
+    eslint-plugin-security \
+    semver \
+    && npm cache clean --force
+
+# Create analysis workspace
+WORKDIR /workspace
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S analyst && \
+    adduser -S analyst -u 1001 -G analyst
+
+# Set up environment
+ENV NODE_ENV=production
+ENV NPM_CONFIG_AUDIT_LEVEL=moderate
+ENV NPM_CONFIG_FUND=false
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+
+# Copy analysis scripts
+COPY scripts/node-analysis.sh /usr/local/bin/analyze
+RUN chmod +x /usr/local/bin/analyze
+
+# Security: Remove package managers to prevent malicious installs during analysis
+# (We'll mount the code and run analysis without installing)
+RUN rm -f /usr/local/bin/npm /usr/local/bin/npx
+
+# Switch to non-root user
+USER analyst
+
+# Default command
+CMD ["/bin/bash"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node --version || exit 1
+
+# Labels for identification
+LABEL maintainer="CodeDog Security Team"
+LABEL description="Node.js Security Analysis Environment"
+LABEL version="1.0"

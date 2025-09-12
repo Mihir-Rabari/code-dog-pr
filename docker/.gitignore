@@ -1,0 +1,64 @@
+# Docker build context
+.dockerignore
+
+# Build artifacts
+*.tar
+*.tar.gz
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Cache
+.cache/
+
+# Analysis outputs
+analysis-output/
+workspace/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
+
+# Compressed files
+*.zip
+*.rar
+
+# Test files
+test/
+tests/
+
+# Documentation build
+docs/_build/
+
+# Python cache (for Python analysis scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Node.js cache (for Node.js analysis scripts)
+node_modules/
+npm-debug.log*
+
+# Temporary analysis data
+tmp/
+temp/

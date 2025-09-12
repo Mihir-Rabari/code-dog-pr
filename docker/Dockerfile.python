@@ -1,0 +1,63 @@
+# Python Analysis Environment
+FROM python:3.11-alpine
+
+# Install security tools and utilities
+RUN apk add --no-cache \
+    git \
+    curl \
+    wget \
+    bash \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    jq \
+    && rm -rf /var/cache/apk/*
+
+# Install Python security analysis tools
+RUN pip install --no-cache-dir \
+    safety \
+    bandit \
+    semgrep \
+    pip-audit \
+    cyclonedx-bom \
+    requests \
+    packaging \
+    && pip cache purge
+
+# Create analysis workspace
+WORKDIR /workspace
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S analyst && \
+    adduser -S analyst -u 1001 -G analyst
+
+# Set up environment
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Copy analysis scripts
+COPY scripts/python-analysis.sh /usr/local/bin/analyze
+RUN chmod +x /usr/local/bin/analyze
+
+# Security: Create restricted pip config
+RUN mkdir -p /home/analyst/.pip && \
+    echo "[global]\nno-cache-dir = true\ndisable-pip-version-check = true" > /home/analyst/.pip/pip.conf && \
+    chown -R analyst:analyst /home/analyst/.pip
+
+# Switch to non-root user
+USER analyst
+
+# Default command
+CMD ["/bin/bash"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python --version || exit 1
+
+# Labels for identification
+LABEL maintainer="CodeDog Security Team"
+LABEL description="Python Security Analysis Environment"
+LABEL version="1.0"
