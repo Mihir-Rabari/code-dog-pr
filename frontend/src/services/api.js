@@ -85,6 +85,6 @@ class ApiService {
 }
 
 // Create and export a default instance
-const apiService = new ApiService()
+const apiService = new ApiService('http://localhost:5000')
 export default apiService
 export { ApiService }

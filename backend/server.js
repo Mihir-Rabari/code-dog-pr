@@ -13,6 +13,10 @@ import databaseService from './services/database.js'
 import aiService from './services/aiService.js'
 import AnalysisEngine from './services/analysisEngine.js'
 
+// Import routes
+import userRoutes from './routes/users.js'
+import repositoryRoutes from './routes/repositories.js'
+
 // Enhanced logging utility
 const log = {
   info: (message, data = null) => {
@@ -83,13 +87,8 @@ app.use(cors({
   credentials: true
 }))
 
-// Rate limiting
-log.info('⏱️ Setting up rate limiting...')
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-})
-app.use(limiter)
+// Rate limiting disabled for development
+log.info('⏱️ Rate limiting disabled for development...')
 
 // Body parsing middleware
 log.info('📝 Setting up body parsing middleware...')
@@ -276,6 +275,12 @@ app.get('/api/jobs', async (req, res) => {
     })
   }
 })
+
+// User routes
+app.use('/api/users', userRoutes)
+
+// Repository routes
+app.use('/api/repositories', repositoryRoutes)
 
 // WebSocket connection handling
 io.on('connection', (socket) => {

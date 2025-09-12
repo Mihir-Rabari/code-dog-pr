@@ -122,17 +122,17 @@ jobSchema.index({ createdAt: -1 })
 
 // Virtual for total alerts count
 jobSchema.virtual('totalAlerts').get(function() {
-  return this.alerts.length
+  return this.alerts ? this.alerts.length : 0
 })
 
 // Virtual for critical alerts count
 jobSchema.virtual('criticalAlerts').get(function() {
-  return this.alerts.filter(alert => alert.severity === 'critical').length
+  return this.alerts ? this.alerts.filter(alert => alert.severity === 'critical').length : 0
 })
 
 // Virtual for high risk alerts count
 jobSchema.virtual('highRiskAlerts').get(function() {
-  return this.alerts.filter(alert => alert.severity === 'high').length
+  return this.alerts ? this.alerts.filter(alert => alert.severity === 'high').length : 0
 })
 
 // Method to add log entry

@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { ThemeProvider } from './components/theme-provider'
+import { ToastProvider } from './components/ui/toast'
+import HomeDark from './pages/HomeDark'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import { appLogger } from './services/logger'
@@ -34,14 +36,17 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <Router>
-        <div className="min-h-screen bg-background">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard/:jobId" element={<Dashboard />} />
-          </Routes>
-        </div>
-      </Router>
+      <ToastProvider>
+        <Router>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              <Route path="/" element={<HomeDark />} />
+              <Route path="/landing" element={<LandingPage />} />
+              <Route path="/dashboard/:jobId" element={<Dashboard />} />
+            </Routes>
+          </div>
+        </Router>
+      </ToastProvider>
     </ThemeProvider>
   )
 }
