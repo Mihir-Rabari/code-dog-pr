@@ -74,6 +74,14 @@ const getLogSourceIcon = (source) => {
   }
 }
 
+// Risk score color utility function
+const getRiskScoreColor = (score) => {
+  if (score >= 90) return '#dc2626' // red-600
+  if (score >= 70) return '#ea580c' // orange-600
+  if (score >= 40) return '#ca8a04' // yellow-600
+  return '#16a34a' // green-600
+}
+
 
 
 function Dashboard() {
@@ -1066,8 +1074,9 @@ function DependenciesTab({ dependencies }) {
   const [selectedDep, setSelectedDep] = useState(null)
   
   const groupedDeps = dependencies.reduce((acc, dep) => {
-    if (!acc[dep.type]) acc[dep.type] = []
-    acc[dep.type].push(dep)
+    const type = dep.type || 'production'
+    if (!acc[type]) acc[type] = []
+    acc[type].push(dep)
     return acc
   }, {})
 
