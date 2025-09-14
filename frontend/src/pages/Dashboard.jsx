@@ -564,7 +564,7 @@ function SummaryTab({ job, jobDetails, alerts, pieChartData, getRiskScoreColor }
       </Card>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="shadow-lg hover:shadow-xl transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
@@ -605,23 +605,6 @@ function SummaryTab({ job, jobDetails, alerts, pieChartData, getRiskScoreColor }
                 <div className="text-2xl font-bold text-yellow-600">{riskyDependencies}</div>
                 <div className="text-sm text-gray-500">Risky Dependencies</div>
                 <div className="text-xs text-gray-400">{jobDetails?.dependencies?.length || 0} scanned</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg hover:shadow-xl transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                <Brain className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {jobDetails?.aiSummary?.confidence ? Math.round(jobDetails.aiSummary.confidence * 100) : 0}%
-                </div>
-                <div className="text-sm text-gray-500">AI Confidence</div>
-                <div className="text-xs text-gray-400">Analysis accuracy</div>
               </div>
             </div>
           </CardContent>
@@ -725,29 +708,6 @@ function SummaryTab({ job, jobDetails, alerts, pieChartData, getRiskScoreColor }
                   <Button variant="ghost" size="sm">
                     <ExternalLink className="w-4 h-4" />
                   </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Language</div>
-                <div className="text-lg">{job.repoInfo.language || 'Unknown'}</div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Popularity</div>
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  <span className="text-lg">{job.repoInfo.stars || 0}</span>
-                  <span className="text-gray-400">stars</span>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Contributors</div>
-                <div className="flex items-center space-x-1">
-                  <Users className="w-4 h-4 text-gray-500" />
-                  <span className="text-lg">{job.repoInfo.contributors?.length || 0}</span>
-                  <span className="text-gray-400">people</span>
                 </div>
               </div>
               
