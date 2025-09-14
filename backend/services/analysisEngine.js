@@ -3,6 +3,42 @@ import githubService from './githubService.js'
 import aiService from './aiService.js'
 import { v4 as uuidv4 } from 'uuid'
 
+/**
+ * Sanitizes confidence value to ensure it's between 0 and 1
+ * Handles different input formats:
+ * - Number > 1: assumes percentage (e.g., 50 -> 0.5)
+ * - Number between 0-1: uses as is
+ * - String with %: parses percentage (e.g., '50%' -> 0.5)
+ * - Invalid/NaN: returns 0
+ */
+function sanitizeConfidence(value) {
+  if (value === null || value === undefined) return 0;
+  
+  // Handle string values (e.g., '50%' or '0.5')
+  if (typeof value === 'string') {
+    if (value.endsWith('%')) {
+      // Parse percentage string (e.g., '50%' -> 0.5)
+      const percentage = parseFloat(value) / 100;
+      return Math.min(Math.max(percentage, 0), 1) || 0;
+    }
+    // Parse numeric string
+    value = parseFloat(value);
+  }
+
+  // Handle numeric values
+  if (typeof value === 'number') {
+    if (value > 1) {
+      // Assume it's a percentage (e.g., 50 -> 0.5)
+      return Math.min(value / 100, 1);
+    }
+    // Already in 0-1 range
+    return Math.max(0, Math.min(value, 1));
+  }
+
+  // Fallback for any other type
+  return 0;
+}
+
 const log = {
   info: (message, data = null) => {
     const timestamp = new Date().toISOString()
@@ -180,7 +216,7 @@ class AnalysisEngine {
             commit.aiAnalysis = {
               summary: aiAnalysis.summary,
               threats: aiAnalysis.threats || [],
-              confidence: aiAnalysis.confidence || 0
+              confidence: sanitizeConfidence(aiAnalysis.confidence)
             }
 
             // Add to job
@@ -256,7 +292,7 @@ class AnalysisEngine {
             aiAnalysis: {
               summary: aiAnalysis.summary,
               threats: aiAnalysis.threats || [],
-              confidence: aiAnalysis.confidence || 0
+              confidence: sanitizeConfidence(aiAnalysis.confidence)
             }
           }
 

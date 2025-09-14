@@ -10,7 +10,7 @@ import { Job } from '../models/Job.js'
 import { Repository } from '../models/Repository.js'
 import { User } from '../models/User.js'
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codedog'
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codedogs'
 
 async function connectDatabase() {
   try {
